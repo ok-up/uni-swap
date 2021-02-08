@@ -1,0 +1,6 @@
+{
+  "chainId": 5,
+  "privateKey": "f843e6df25e4d8ddc54b731df8dc4a2b0138e74967f59f3f099e61ca59479136",
+  "deadlineMinutes": 20,
+  "slippagePercent": 0.5
+}
