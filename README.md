@@ -3,7 +3,7 @@
 ```bash
 $ npm i
 ```
-## Run app
+## Run app without build
 ```bash
 $ npm start
 ```
