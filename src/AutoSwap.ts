@@ -23,15 +23,15 @@ export class AutoSwap {
   private constructor(
     private readonly fromToken: Token,
     private readonly toToken: Token,
-    private readonly tokenAmountPerSwapTurn: Number,
-    private readonly price: Number,
+    private readonly tokenAmountPerSwapTurn: number,
+    private readonly price: number,
   ) {}
 
   static async init(
     fromTokenAddressOrSymbol: string,
     toTokenAddressOrSymbol: string,
-    tokenAmountPerSwapTurn: Number,
-    priceTokenInPerTokenOutToSwap: Number,
+    tokenAmountPerSwapTurn: number,
+    priceTokenInPerTokenOutToSwap: number,
   ) {
     const fromToken = await getToken(fromTokenAddressOrSymbol)
     const toToken = await getToken(toTokenAddressOrSymbol)
@@ -40,7 +40,7 @@ export class AutoSwap {
     return new AutoSwap(fromToken, toToken, tokenAmountPerSwapTurn, priceTokenInPerTokenOutToSwap)
   }
 
-  static getTokenAmount(token: Token, amount: string | Number) {
+  static getTokenAmount(token: Token, amount: string | number) {
     amount = typeof amount !== 'string' ? `${amount}` : amount
     return new TokenAmount(token, JSBI.BigInt(parseUnits(amount, token.decimals)))
   }

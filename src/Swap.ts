@@ -11,7 +11,7 @@ interface SwapCall {
 interface SuccessfulCall {
   call: SwapCall
   gasEstimate: BigNumber
-  options: object
+  options: any
 }
 
 interface FailedCall {

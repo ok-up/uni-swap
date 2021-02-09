@@ -1,5 +1,4 @@
 import { Fetcher, ChainId, Token } from '@uniswap/sdk'
-import { TokenList } from '@uniswap/token-lists'
 import { Configs } from './Config'
 import { isAddress } from './Utils'
 
@@ -16,7 +15,7 @@ const EMPTY_LIST: TokenAddressMap = {
   [ChainId.MAINNET]: {},
 }
 
-function listToTokenMap(list: TokenList) {
+function listToTokenMap(list): TokenAddressMap {
   const map = list.tokens.reduce(
     (tokenMap, tokenInfo) => {
       const token = new Token(

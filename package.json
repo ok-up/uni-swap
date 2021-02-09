@@ -22,7 +22,6 @@
     "@ethersproject/solidity": "^5.0.8",
     "@uniswap/default-token-list": "^2.0.0",
     "@uniswap/sdk": "^3.0.3",
-    "@uniswap/token-lists": "^1.0.0-beta.19",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.27",
     "lodash": "^4.17.20",
