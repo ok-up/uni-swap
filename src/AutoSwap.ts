@@ -23,15 +23,15 @@ export class AutoSwap {
   private constructor(
     private readonly fromToken: Currency,
     private readonly toToken: Currency,
-    private readonly tokenAmountPerSwapTurn: Number,
-    private readonly price: Number,
+    private readonly tokenAmountPerSwapTurn: number | string,
+    private readonly price: number | string,
   ) {}
 
   static async init(
     fromTokenAddressOrSymbol: string,
     toTokenAddressOrSymbol: string,
-    tokenAmountPerSwapTurn: number,
-    priceTokenInPerTokenOutToSwap: number,
+    tokenAmountPerSwapTurn: number | string,
+    priceTokenInPerTokenOutToSwap: number | string,
   ) {
     const fromToken = await getToken(fromTokenAddressOrSymbol)
     const toToken = await getToken(toTokenAddressOrSymbol)
