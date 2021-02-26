@@ -4,7 +4,7 @@ import { ChainId } from '@uniswap/sdk'
 
 function getConfigs(): { [prop: string]: any } {
   try {
-    const content = fs.readFileSync(path.join('../config.json'))
+    const content = fs.readFileSync(path.join(__dirname, '../config.json'))
     return JSON.parse(content.toString())
   } catch {
     return {}

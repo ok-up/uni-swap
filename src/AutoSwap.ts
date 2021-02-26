@@ -1,5 +1,5 @@
 import * as NodeSchedule from 'node-schedule'
-import { Token, TokenAmount, JSBI, Trade } from '@uniswap/sdk'
+import { Token, TokenAmount, JSBI, Trade, Currency, CurrencyAmount } from '@uniswap/sdk'
 import { getToken } from './Token'
 import { useTradeExactIn } from './Trades'
 import { parseUnits, formatUnits, formatEther } from 'ethers/lib/utils'
@@ -21,10 +21,10 @@ export class AutoSwap {
   private schedule: NodeSchedule.Job
 
   private constructor(
-    private readonly fromToken: Token,
-    private readonly toToken: Token,
-    private readonly tokenAmountPerSwapTurn: number,
-    private readonly price: number,
+    private readonly fromToken: Currency,
+    private readonly toToken: Currency,
+    private readonly tokenAmountPerSwapTurn: Number,
+    private readonly price: Number,
   ) {}
 
   static async init(
@@ -40,9 +40,11 @@ export class AutoSwap {
     return new AutoSwap(fromToken, toToken, tokenAmountPerSwapTurn, priceTokenInPerTokenOutToSwap)
   }
 
-  static getTokenAmount(token: Token, amount: string | number) {
+  static getTokenAmount(token: Token | Currency, amount: string | Number) {
     amount = typeof amount !== 'string' ? `${amount}` : amount
-    return new TokenAmount(token, JSBI.BigInt(parseUnits(amount, token.decimals)))
+    return token instanceof Token
+      ? new TokenAmount(token, JSBI.BigInt(parseUnits(amount, token.decimals)))
+      : CurrencyAmount.ether(JSBI.BigInt(parseUnits(amount, token.decimals)))
   }
 
   static getSwapInfo(trade: Trade, slippagePercent: number) {
@@ -94,8 +96,14 @@ export class AutoSwap {
 
     if (+swapInfo.price < this.price) {
       const balanceEther = formatEther(await getBalance())
-      const balanceTokenIn = formatUnits(await getTokenBalance(this.fromToken.address), this.fromToken.decimals)
-      const balanceTokenOut = formatUnits(await getTokenBalance(this.toToken.address), this.toToken.decimals)
+      const balanceTokenIn =
+        this.fromToken instanceof Token
+          ? formatUnits(await getTokenBalance(this.fromToken.address), this.fromToken.decimals)
+          : balanceEther
+      const balanceTokenOut =
+        this.toToken instanceof Token
+          ? formatUnits(await getTokenBalance(this.toToken.address), this.toToken.decimals)
+          : balanceEther
 
       console.log('Ether balance:', balanceEther, 'ETH')
       console.log('Input token balance:', balanceTokenIn, this.fromToken.symbol)

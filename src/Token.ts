@@ -1,4 +1,4 @@
-import { Fetcher, ChainId, Token } from '@uniswap/sdk'
+import { Fetcher, ChainId, Token, ETHER } from '@uniswap/sdk'
 import { Configs } from './Config'
 import { isAddress } from './Utils'
 
@@ -45,6 +45,7 @@ export const UNSUPPORT_TOKENS = listToTokenMap(UNSUPPORT_TOKEN_LIST)
 export async function getToken(address: string) {
   if (!isAddress(address)) {
     const symbol = address.toUpperCase()
+    if (symbol === 'ETH') return ETHER
     const token = Object.values(defaultTokens[Configs.chainId]).find((token) => symbol === token.symbol)
     !token && console.log('Not found token...', address)
     return token || null
