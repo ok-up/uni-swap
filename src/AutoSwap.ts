@@ -40,7 +40,7 @@ export class AutoSwap {
     return new AutoSwap(fromToken, toToken, tokenAmountPerSwapTurn, priceTokenInPerTokenOutToSwap)
   }
 
-  static getTokenAmount(token: Token | Currency, amount: string | Number) {
+  static getTokenAmount(token: Token | Currency, amount: string | number) {
     amount = typeof amount !== 'string' ? `${amount}` : amount
     return token instanceof Token
       ? new TokenAmount(token, JSBI.BigInt(parseUnits(amount, token.decimals)))
