@@ -1,0 +1,27 @@
+{
+  "name": "deploy-token",
+  "version": "1.0.0",
+  "description": "",
+  "main": ".",
+  "scripts": {
+    "tf-deploytoken": "truffle migrate --network goerli --f 1 --to 2",
+    "tf-compile": "truffle compile --all",
+    "tf-test": "truffle test --compile-all",
+    "hh-compile": "hardhat compile",
+    "hh-console": "hardhat console --network goerli",
+    "hh-deploytoken": "hardhat run --network goerli scripts/deploy-token.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.2.2",
+    "dotenv": "^8.2.0",
+    "openzeppelin-solidity": "^2.1.3"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.1",
+    "ethers": "^5.0.31",
+    "hardhat": "^2.0.11"
+  }
+}
