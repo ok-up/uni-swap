@@ -1,22 +1,23 @@
-import fs = require('fs')
-import path = require('path')
 import { ChainId } from '@uniswap/sdk'
 
 function getConfigs(): { [prop: string]: any } {
-  let configs: any = {}
-  try {
-    const content = fs.readFileSync(path.join(__dirname, '../config.json'))
-    configs = JSON.parse(content.toString())
-  } catch {
-    throw new Error('Failed to load file configs')
+  const configs: any = {
+    privateKey: process.env.PRIVATE_KEY,
+    amountInputTokenPerSwapTurn: process.env.AMOUNT_ETH,
+    priceInputPerOutputToSwap: process.env.BUY_LIMIT,
+    outputToken: process.env.TOKEN_CONTRACT,
+    deadlineMinutes: +(process.env.DEADLINE || 20),
+    chainId: +process.env.NETWORK,
+    slippagePercent: +process.env.SLIPPAGE / 1000,
+    frequencySwappingPerSecond: +process.env.INTERVAL,
+    inputToken: 'ETH',
   }
 
-  if (!configs.privateKey) throw new Error('Missing privateKey')
-  if (!configs.inputToken) throw new Error('Missing inputToken')
-  if (!configs.outputToken) throw new Error('Missing outputToken')
-  if (!configs.amountInputTokenPerSwapTurn) throw new Error('Missing amountInputTokenPerSwapTurn')
-  if (!configs.priceInputPerOutputToSwap) throw new Error('Missing priceInputPerOutputToSwap')
-  if (!configs.frequencySwappingPerSecond) throw new Error('Missing frequencySwappingPerSecond')
+  if (!configs.privateKey) throw new Error('Missing PRIVATE_KEY')
+  if (!configs.outputToken) throw new Error('Missing TOKEN_CONTRACT')
+  if (!configs.amountInputTokenPerSwapTurn) throw new Error('Missing AMOUNT_ETH')
+  if (!configs.priceInputPerOutputToSwap) throw new Error('Missing BUY_LIMIT')
+  if (!configs.frequencySwappingPerSecond) throw new Error('Missing INTERVAL')
 
   return configs
 }

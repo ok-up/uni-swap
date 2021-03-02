@@ -164,7 +164,7 @@ export class AutoSwap {
 
       if (+trade.inputAmount.toExact() > +balanceTokenIn) {
         AutoSwap.showErrorNotEnoughtInput()
-        return
+        return true
       }
 
       // estimate gas
@@ -179,7 +179,7 @@ export class AutoSwap {
 
       if (+balanceEther < +formatEther(gasEstimate)) {
         AutoSwap.showErrorNotEnoughtETH()
-        return
+        return true
       }
 
       // execute swap
@@ -195,6 +195,7 @@ export class AutoSwap {
       // wait transaction finish
       response && response.wait && (await response.wait())
     }
+    return true
   }
 
   async log() {
@@ -202,10 +203,10 @@ export class AutoSwap {
     this.prevTick = Date.now()
     // !Configs.isDisableLog && console.log('Call after:', delta, 'ms')
     const beginAt = Date.now()
-    await this.swap()
+    const result = await this.swap()
     const endAt = Date.now()
     // !Configs.isDisableLog && console.log('Time run:', endAt - beginAt, 'ms')
-    !Configs.isDisableLog && console.log()
+    result && !Configs.isDisableLog && console.log()
   }
 
   start(scheduleRule: ScheduleRule) {

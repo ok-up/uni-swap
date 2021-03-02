@@ -22,12 +22,14 @@
     "@ethersproject/solidity": "^5.0.8",
     "@uniswap/default-token-list": "^2.0.0",
     "@uniswap/sdk": "^3.0.3",
+    "dotenv": "^8.2.0",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.27",
     "lodash": "^4.17.20",
     "node-schedule": "^2.0.0",
     "rimraf": "^3.0.2",
-    "solc": "^0.6.6"
+    "solc": "^0.6.6",
+    "web3": "^1.3.4"
   },
   "devDependencies": {
     "@types/jest": "^26.0.15",
