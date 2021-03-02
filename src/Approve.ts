@@ -44,7 +44,8 @@ export function isTransactionRecent(tx: TransactionDetails): boolean {
 // returns whether a token has a pending approval transaction
 export async function hasPendingApproval(tokenAddress?: string, spender?: string) {
   const allTransactions: { [txHash: string]: TransactionDetails } = {}
-  return typeof tokenAddress === 'string' &&
+  return (
+    typeof tokenAddress === 'string' &&
     typeof spender === 'string' &&
     Object.keys(allTransactions).some((hash) => {
       const tx = allTransactions[hash]
@@ -57,6 +58,7 @@ export async function hasPendingApproval(tokenAddress?: string, spender?: string
         return approval.spender === spender && approval.tokenAddress === tokenAddress && isTransactionRecent(tx)
       }
     })
+  )
 }
 
 export async function getTokenAllowance(token: Token) {
@@ -70,6 +72,7 @@ export async function getTokenAllowance(token: Token) {
 }
 
 export async function getApproveState(amountToApprove: CurrencyAmount, spender: string) {
+  if (amountToApprove.currency === ETHER) return ApprovalState.APPROVED
   const token = amountToApprove instanceof TokenAmount ? amountToApprove.token : undefined
   const currentAllowance = await getTokenAllowance(token)
 

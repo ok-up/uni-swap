@@ -1,5 +1,5 @@
 import * as NodeSchedule from 'node-schedule'
-import { Token, TokenAmount, JSBI, Trade, Currency, CurrencyAmount } from '@uniswap/sdk'
+import { Token, TokenAmount, JSBI, Trade, Currency, CurrencyAmount, Fraction } from '@uniswap/sdk'
 import { getToken } from './Token'
 import { useTradeExactIn } from './Trades'
 import { parseUnits, formatUnits, formatEther } from 'ethers/lib/utils'
@@ -19,13 +19,20 @@ type ScheduleRule =
 
 export class AutoSwap {
   private schedule: NodeSchedule.Job
+  private readonly price: Fraction
+  private prevTick = Date.now()
 
   private constructor(
     private readonly fromToken: Currency,
     private readonly toToken: Currency,
     private readonly tokenAmountPerSwapTurn: number | string,
-    private readonly price: number | string,
-  ) {}
+    price: number | string,
+  ) {
+    this.price = new Fraction(
+      JSBI.BigInt(parseUnits(`${price}`, this.fromToken.decimals)),
+      JSBI.BigInt(parseUnits('1', this.fromToken.decimals)),
+    )
+  }
 
   static async init(
     fromTokenAddressOrSymbol: string,
@@ -63,13 +70,15 @@ export class AutoSwap {
       price: trade.executionPrice.invert().toSignificant(6),
       nextMidPrice: trade.nextMidPrice.toSignificant(6),
       slippage: slippage,
+      _price: trade.executionPrice.invert(),
     }
 
     return swapInfo
   }
 
   static showSwapInfo(swapInfo) {
-    console.log('---------------------------------------------')
+    if (Configs.isDisableLog) return
+    console.log('--------------------Info---------------------')
     console.log('From', swapInfo.from)
     console.log('To (estimated)', swapInfo.toEstimated)
     console.log('Slippage percent', swapInfo.slippagePercent)
@@ -77,7 +86,7 @@ export class AutoSwap {
     // console.log('MinimumAmountOut with slippage', swapInfo.minimumAmountOut)
     console.log()
     console.log('Minimum received', swapInfo.minimumAmountOut)
-    console.log('Price Impact Without Fee', swapInfo.priceImpactWithoutFee)
+    console.log('Price Impact Without Fee', `${swapInfo.priceImpactWithoutFee}%`)
     console.log('Liquidity Provider Fee', swapInfo.realizedLPFee)
     console.log('Router', swapInfo.router)
     console.log()
@@ -86,15 +95,51 @@ export class AutoSwap {
     console.log('---------------------------------------------')
   }
 
+  static showBalances(balanceEther, balanceTokenIn, balanceTokenOut, fromToken, toToken, swapAmount) {
+    if (Configs.isDisableLog) return
+    console.log('++++++++++++++++++Balances+++++++++++++++++++')
+    console.log('Ether balance:', balanceEther, 'ETH')
+    console.log('Input token balance:', balanceTokenIn, fromToken)
+    console.log('Output token balance:', balanceTokenOut, toToken)
+    console.log()
+    console.log('Swap amount', swapAmount, fromToken)
+    console.log('+++++++++++++++++++++++++++++++++++++++++++++')
+  }
+
+  static showErrorNotEnoughtInput() {
+    console.warn('********************Error********************')
+    console.warn('Not enought input token to execute transaction')
+    console.warn('*********************************************')
+  }
+
+  static showErrorNotEnoughtETH() {
+    console.warn('********************Error********************')
+    console.warn('Not enought ether to execute transaction')
+    console.warn('*********************************************')
+  }
+
+  static showSwapOutput(toEstimated, gasEstimate, minimumAmountOut, hash) {
+    console.log('====================Swap=====================')
+    console.log('To (estimated)', toEstimated)
+    console.log('Gas (estimated)', gasEstimate)
+    console.log('Minimum received', minimumAmountOut)
+    console.log()
+    console.log('Detail transaction hash', hash)
+    console.log('=============================================')
+  }
+
   async swap() {
     const trade = await useTradeExactIn(
       AutoSwap.getTokenAmount(this.fromToken, this.tokenAmountPerSwapTurn),
       this.toToken,
     )
+    if (!trade) return
+
     const swapInfo = AutoSwap.getSwapInfo(trade, Configs.slippagePercent)
     AutoSwap.showSwapInfo(swapInfo)
 
-    if (+swapInfo.price < this.price) {
+    // console.log(swapInfo._price.raw.lessThan(this.price))
+    if (swapInfo._price.raw.lessThan(this.price)) {
       const balanceEther = formatEther(await getBalance())
       const balanceTokenIn =
         this.fromToken instanceof Token
@@ -105,19 +150,20 @@ export class AutoSwap {
           ? formatUnits(await getTokenBalance(this.toToken.address), this.toToken.decimals)
           : balanceEther
 
-      console.log('Ether balance:', balanceEther, 'ETH')
-      console.log('Input token balance:', balanceTokenIn, this.fromToken.symbol)
-      console.log('Output token balance:', balanceTokenOut, this.toToken.symbol)
-      console.log()
-      console.log('Swap amount', swapInfo.from, this.fromToken.symbol)
+      AutoSwap.showBalances(
+        balanceEther,
+        balanceTokenIn,
+        balanceTokenOut,
+        this.fromToken.symbol,
+        this.toToken.symbol,
+        swapInfo.from,
+      )
 
       // allow token to execute transaction
       await approveToken(trade.inputAmount, UNISWAPV2_ROUTER_ADDRESS)
 
       if (+trade.inputAmount.toExact() > +balanceTokenIn) {
-        console.warn('*********************************************')
-        console.warn('Not enought input token to execute transaction')
-        console.warn('*********************************************')
+        AutoSwap.showErrorNotEnoughtInput()
         return
       }
 
@@ -132,9 +178,7 @@ export class AutoSwap {
       } = await estimateGasTrade(trade, swapInfo.slippage)
 
       if (+balanceEther < +formatEther(gasEstimate)) {
-        console.warn('*********************************************')
-        console.warn('Not enought ether to execute transaction')
-        console.warn('*********************************************')
+        AutoSwap.showErrorNotEnoughtETH()
         return
       }
 
@@ -146,22 +190,26 @@ export class AutoSwap {
       })
 
       // write log
-      console.log('=============================================')
-      console.log('To (estimated)', swapInfo.toEstimated)
-      console.log('Gas (estimated)', gasEstimate.toString())
-      console.log('Minimum received', swapInfo.minimumAmountOut)
-      console.log()
-      console.log('Detail transaction hash', response.hash)
-      console.log('=============================================')
-      console.log()
+      AutoSwap.showSwapOutput(swapInfo.toEstimated, gasEstimate.toString(), swapInfo.minimumAmountOut, response.hash)
 
       // wait transaction finish
       response && response.wait && (await response.wait())
     }
   }
 
+  async log() {
+    const delta = Date.now() - this.prevTick
+    this.prevTick = Date.now()
+    // !Configs.isDisableLog && console.log('Call after:', delta, 'ms')
+    const beginAt = Date.now()
+    await this.swap()
+    const endAt = Date.now()
+    // !Configs.isDisableLog && console.log('Time run:', endAt - beginAt, 'ms')
+    !Configs.isDisableLog && console.log()
+  }
+
   start(scheduleRule: ScheduleRule) {
-    this.schedule = NodeSchedule.scheduleJob(scheduleRule, this.swap.bind(this))
+    this.schedule = NodeSchedule.scheduleJob(scheduleRule, this.log.bind(this))
   }
 
   stop() {

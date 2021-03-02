@@ -1,17 +1,19 @@
 import { AutoSwap } from './AutoSwap'
+import { Configs } from './Config'
 
 async function main() {
-  const input = 'ETH'
-  const ouput = '0x61B46E6fDEd0A8730B16B4F551A23A4AD64C9909'
-  const tokenAmountPerSwapTurn = '0.0001'
+  const {
+    inputToken,
+    outputToken,
+    amountInputTokenPerSwapTurn,
+    priceInputPerOutputToSwap,
+    frequencySwappingPerSecond,
+  } = Configs
+  const autoSwap = await AutoSwap.init(inputToken, outputToken, amountInputTokenPerSwapTurn, priceInputPerOutputToSwap)
 
-  // const input = '0x61B46E6fDEd0A8730B16B4F551A23A4AD64C9909'
-  // const ouput = 'ETH'
-  // const tokenAmountPerSwapTurn = '0.014876765530554233'
-
-  const inputPerOutputToSwap = 10000
-  const autoSwap = await AutoSwap.init(input, ouput, tokenAmountPerSwapTurn, inputPerOutputToSwap)
-  await autoSwap.swap()
+  let sec = Math.floor(60 / frequencySwappingPerSecond)
+  sec = sec > 0 ? sec : 1
+  await autoSwap.start(`*/${sec} * * * * *`)
 }
 
 main()
