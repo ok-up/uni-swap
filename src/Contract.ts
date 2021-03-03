@@ -11,11 +11,34 @@ const NetworkNames = {
   [ChainId.ROPSTEN]: 'ropsten',
 }
 
-const provider = process.env.INFURA_HTTP
-  ? ethers.getDefaultProvider(NetworkNames[Configs.chainId], {
-      infura: process.env.INFURA_HTTP,
-    })
-  : ethers.getDefaultProvider(ethers.providers.getNetwork(Configs.chainId))
+function getProvider() {
+  if (process.env.INFURA_WWS) {
+    try {
+      console.log('Try WWS connect')
+      const provider = ethers.getDefaultProvider(NetworkNames[Configs.chainId], {
+        infura: process.env.INFURA_WWS,
+      })
+      console.log('WWS connected')
+      return provider
+    } catch {}
+  }
+  if (process.env.INFURA_HTTP) {
+    try {
+      console.log('Try HTTP connect')
+      const provider = ethers.getDefaultProvider(NetworkNames[Configs.chainId], {
+        infura: process.env.INFURA_HTTP,
+      })
+      console.log('HTTP connected')
+      return provider
+    } catch {}
+  }
+  console.log('Try Default connect')
+  const provider = ethers.getDefaultProvider(ethers.providers.getNetwork(Configs.chainId))
+  console.log('Default connected')
+  return 
+}
+
+const provider = getProvider()
 const wallet = new ethers.Wallet(Configs.privateKey, provider)
 
 export const WALLET_ADDRESS = wallet.address
