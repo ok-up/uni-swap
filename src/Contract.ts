@@ -1,8 +1,21 @@
 import { isAddress } from './Utils'
 import { Contract, ethers, BigNumber } from 'ethers'
 import { Configs } from './Config'
+import { ChainId } from '@uniswap/sdk'
 
-const provider = ethers.getDefaultProvider(ethers.providers.getNetwork(Configs.chainId))
+const NetworkNames = {
+  [ChainId.MAINNET]: 'mainnet',
+  [ChainId.GÖRLI]: 'goerli',
+  [ChainId.KOVAN]: 'kovan',
+  [ChainId.RINKEBY]: 'rinkeby',
+  [ChainId.ROPSTEN]: 'ropsten',
+}
+
+const provider = process.env.INFURA_HTTP
+  ? ethers.getDefaultProvider(NetworkNames[Configs.chainId], {
+      infura: process.env.INFURA_HTTP,
+    })
+  : ethers.getDefaultProvider(ethers.providers.getNetwork(Configs.chainId))
 const wallet = new ethers.Wallet(Configs.privateKey, provider)
 
 export const WALLET_ADDRESS = wallet.address
