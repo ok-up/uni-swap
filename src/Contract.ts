@@ -35,7 +35,7 @@ function getProvider() {
   console.log('Try Default connect')
   const provider = ethers.getDefaultProvider(ethers.providers.getNetwork(Configs.chainId))
   console.log('Default connected')
-  return 
+  return provider
 }
 
 const provider = getProvider()
