@@ -139,8 +139,8 @@ export class AutoSwap {
     AutoSwap.showSwapInfo(tracklog, swapInfo)
 
     // console.log(swapInfo._price.raw.toSignificant(6))
-    // console.log(swapInfo._price.raw.lessThan(this.price))
-    if (swapInfo._price.raw.lessThan(this.price)) {
+    // console.log(swapInfo._price.raw.greaterThan(this.price))
+    if (swapInfo._price.raw.greaterThan(this.price) || swapInfo._price.raw.equalTo(this.price)) {
       const balanceEther = formatEther(await getBalance())
       const balanceTokenIn =
         this.fromToken instanceof Token
