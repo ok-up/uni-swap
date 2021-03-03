@@ -42,7 +42,7 @@ const defaultTokens = listToTokenMap(DEFAULT_TOKEN_LIST)
 
 export const UNSUPPORT_TOKENS = listToTokenMap(UNSUPPORT_TOKEN_LIST)
 
-export async function getToken(address: string) {
+export async function getToken(address: string, defaultSymbol?: string) {
   if (!isAddress(address)) {
     const symbol = address.toUpperCase()
     if (symbol === 'ETH') return ETHER
@@ -54,7 +54,15 @@ export async function getToken(address: string) {
   if (token) return token
   try {
     const fetchToken = await Fetcher.fetchTokenData(Configs.chainId, address)
-    return fetchToken
+    return defaultSymbol && !fetchToken.symbol
+      ? new Token(
+          fetchToken.chainId,
+          fetchToken.address,
+          fetchToken.decimals,
+          defaultSymbol,
+          fetchToken.name || defaultSymbol,
+        )
+      : fetchToken
   } catch (err) {
     console.log('Not found token...', address)
     return null

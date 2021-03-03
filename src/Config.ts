@@ -4,7 +4,7 @@ function getConfigs(): { [prop: string]: any } {
   const configs: any = {
     privateKey: process.env.PRIVATE_KEY,
     amountInputTokenPerSwapTurn: process.env.AMOUNT_ETH,
-    priceInputPerOutputToSwap: process.env.BUY_LIMIT,
+    limitPriceOutputTokenPerOneInputTokenToSwap: process.env.BUY_LIMIT,
     outputToken: process.env.TOKEN_CONTRACT,
     deadlineMinutes: +(process.env.DEADLINE || 20),
     chainId: +process.env.NETWORK,
@@ -16,7 +16,7 @@ function getConfigs(): { [prop: string]: any } {
   if (!configs.privateKey) throw new Error('Missing PRIVATE_KEY')
   if (!configs.outputToken) throw new Error('Missing TOKEN_CONTRACT')
   if (!configs.amountInputTokenPerSwapTurn) throw new Error('Missing AMOUNT_ETH')
-  if (!configs.priceInputPerOutputToSwap) throw new Error('Missing BUY_LIMIT')
+  if (!configs.limitPriceOutputTokenPerOneInputTokenToSwap) throw new Error('Missing BUY_LIMIT')
   if (!configs.frequencySwappingPerSecond) throw new Error('Missing INTERVAL')
 
   return configs
@@ -30,7 +30,7 @@ export type Configurations = {
   inputToken: string
   outputToken: string
   amountInputTokenPerSwapTurn: string | number
-  priceInputPerOutputToSwap: string | number
+  limitPriceOutputTokenPerOneInputTokenToSwap: string | number
   frequencySwappingPerSecond: number
   isDisableLog: boolean
 }
@@ -58,7 +58,7 @@ export const Configs: Configurations = {
   amountInputTokenPerSwapTurn: '',
 
   // price inputToken/outputToken to swap
-  priceInputPerOutputToSwap: Number.MAX_SAFE_INTEGER,
+  limitPriceOutputTokenPerOneInputTokenToSwap: Number.MAX_SAFE_INTEGER,
 
   // frequencySwappingPerSecond
   frequencySwappingPerSecond: 15,

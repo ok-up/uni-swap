@@ -8,10 +8,10 @@ async function main() {
     inputToken,
     outputToken,
     amountInputTokenPerSwapTurn,
-    priceInputPerOutputToSwap,
+    limitPriceOutputTokenPerOneInputTokenToSwap,
     frequencySwappingPerSecond,
   } = Configs
-  const autoSwap = await AutoSwap.init(inputToken, outputToken, amountInputTokenPerSwapTurn, priceInputPerOutputToSwap)
+  const autoSwap = await AutoSwap.init(inputToken, outputToken, amountInputTokenPerSwapTurn, limitPriceOutputTokenPerOneInputTokenToSwap)
 
   let sec = Math.floor(60 / frequencySwappingPerSecond)
   sec = sec > 0 ? sec : 1

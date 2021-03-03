@@ -29,8 +29,8 @@ export class AutoSwap {
     price: number | string,
   ) {
     this.price = new Fraction(
-      JSBI.BigInt(parseUnits(`${price}`, this.fromToken.decimals)),
-      JSBI.BigInt(parseUnits('1', this.fromToken.decimals)),
+      JSBI.BigInt(parseUnits(`${price}`, this.toToken.decimals)),
+      JSBI.BigInt(parseUnits('1', this.toToken.decimals)),
     )
   }
 
@@ -38,13 +38,13 @@ export class AutoSwap {
     fromTokenAddressOrSymbol: string,
     toTokenAddressOrSymbol: string,
     tokenAmountPerSwapTurn: number | string,
-    priceTokenInPerTokenOutToSwap: number | string,
+    limitPriceOutputTokenPerOneInputTokenToSwap: number | string,
   ) {
-    const fromToken = await getToken(fromTokenAddressOrSymbol)
-    const toToken = await getToken(toTokenAddressOrSymbol)
+    const fromToken = await getToken(fromTokenAddressOrSymbol, 'InputToken')
+    const toToken = await getToken(toTokenAddressOrSymbol, 'OutputToken')
     if (!fromToken) throw new Error(`Token not found... ${fromTokenAddressOrSymbol}`)
     if (!toToken) throw new Error(`Token not found... ${toTokenAddressOrSymbol}`)
-    return new AutoSwap(fromToken, toToken, tokenAmountPerSwapTurn, priceTokenInPerTokenOutToSwap)
+    return new AutoSwap(fromToken, toToken, tokenAmountPerSwapTurn, limitPriceOutputTokenPerOneInputTokenToSwap)
   }
 
   static getTokenAmount(token: Token | Currency, amount: string | number) {
@@ -59,85 +59,86 @@ export class AutoSwap {
     const { priceImpactWithoutFee, realizedLPFee } = computeTradePriceBreakdown(trade)
 
     const swapInfo = {
-      from: trade.inputAmount.toExact(),
-      toEstimated: trade.outputAmount.toSignificant(6),
-      slippagePercent: slippage.toSignificant(6),
-      maximumAmountIn: input.toSignificant(6),
-      minimumAmountOut: output.toSignificant(6),
-      priceImpactWithoutFee: priceImpactWithoutFee.toSignificant(4),
-      realizedLPFee: realizedLPFee.toSignificant(4),
+      from: `${trade.inputAmount.toExact()} ${trade.inputAmount.currency.symbol}`,
+      toEstimated: `${trade.outputAmount.toSignificant(6)} ${trade.outputAmount.currency.symbol}`,
+      slippagePercent: `${slippage.toSignificant(6)} %`,
+      maximumAmountIn: `${input.toSignificant(6)}`,
+      minimumAmountOut: `${output.toSignificant(6)}`,
+      priceImpactWithoutFee: `${priceImpactWithoutFee.toSignificant(4)} %`,
+      realizedLPFee: `${realizedLPFee.toSignificant(4)} ETH`,
       router: trade.route.path.map((val) => val.symbol).join(' > '),
-      price: trade.executionPrice.invert().toSignificant(6),
-      nextMidPrice: trade.nextMidPrice.toSignificant(6),
+      price: `${trade.executionPrice.toSignificant(6)} ${trade.outputAmount.currency.symbol} per ${
+        trade.inputAmount.currency.symbol
+      }`,
+      nextMidPrice: `${trade.nextMidPrice.toSignificant(6)}`,
       slippage: slippage,
-      _price: trade.executionPrice.invert(),
+      _price: trade.executionPrice,
     }
 
     return swapInfo
   }
 
-  static showSwapInfo(swapInfo) {
-    if (Configs.isDisableLog) return
-    console.log('--------------------Info---------------------')
-    console.log('From', swapInfo.from)
-    console.log('To (estimated)', swapInfo.toEstimated)
-    console.log('Slippage percent', swapInfo.slippagePercent)
-    // console.log('MaximumAmountIn with slippage', swapInfo.maximumAmountIn)
-    // console.log('MinimumAmountOut with slippage', swapInfo.minimumAmountOut)
-    console.log()
-    console.log('Minimum received', swapInfo.minimumAmountOut)
-    console.log('Price Impact Without Fee', `${swapInfo.priceImpactWithoutFee}%`)
-    console.log('Liquidity Provider Fee', swapInfo.realizedLPFee)
-    console.log('Router', swapInfo.router)
-    console.log()
-    // console.log('NextMidPrice', swapInfo.nextMidPrice)
-    console.log('Price', swapInfo.price)
-    console.log('---------------------------------------------')
+  static showSwapInfo(tracklog, swapInfo) {
+    tracklog.push(`--------------------Info---------------------`)
+    tracklog.push(`From ${swapInfo.from}`)
+    tracklog.push(`To (estimated) ${swapInfo.toEstimated}`)
+    tracklog.push(`Slippage percent ${swapInfo.slippagePercent}`)
+    // tracklog.push(`MaximumAmountIn with slippage ${swapInfo.maximumAmountIn}`)
+    // tracklog.push(`MinimumAmountOut with slippage ${swapInfo.minimumAmountOut}`)
+    tracklog.push(``)
+    tracklog.push(`Minimum received ${swapInfo.minimumAmountOut}`)
+    tracklog.push(`Price Impact Without Fee ${swapInfo.priceImpactWithoutFee}`)
+    tracklog.push(`Liquidity Provider Fee ${swapInfo.realizedLPFee}`)
+    tracklog.push(`Router ${swapInfo.router}`)
+    tracklog.push(``)
+    // tracklog.push(`NextMidPrice ${swapInfo.nextMidPrice}`)
+    tracklog.push(`Price ${swapInfo.price}`)
+    tracklog.push(`---------------------------------------------`)
   }
 
-  static showBalances(balanceEther, balanceTokenIn, balanceTokenOut, fromToken, toToken, swapAmount) {
-    if (Configs.isDisableLog) return
-    console.log('++++++++++++++++++Balances+++++++++++++++++++')
-    console.log('Ether balance:', balanceEther, 'ETH')
-    console.log('Input token balance:', balanceTokenIn, fromToken)
-    console.log('Output token balance:', balanceTokenOut, toToken)
-    console.log()
-    console.log('Swap amount', swapAmount, fromToken)
-    console.log('+++++++++++++++++++++++++++++++++++++++++++++')
+  static showBalances(tracklog, balanceEther, balanceTokenIn, balanceTokenOut, fromToken, toToken, swapAmount) {
+    tracklog.push(`++++++++++++++++++Balances+++++++++++++++++++`)
+    tracklog.push(`Ether balance: ${balanceEther} ETH`)
+    tracklog.push(`Input token balance: ${balanceTokenIn} ${fromToken}`)
+    tracklog.push(`Output token balance: ${balanceTokenOut} ${toToken}`)
+    tracklog.push(``)
+    tracklog.push(`Swap amount ${swapAmount} ${fromToken}`)
+    tracklog.push(`+++++++++++++++++++++++++++++++++++++++++++++`)
   }
 
-  static showErrorNotEnoughtInput() {
-    console.warn('********************Error********************')
-    console.warn('Not enought input token to execute transaction')
-    console.warn('*********************************************')
+  static showErrorNotEnoughtInput(tracklog) {
+    tracklog.push(`********************Error********************`)
+    tracklog.push(`Not enought input token to execute transaction`)
+    tracklog.push(`*********************************************`)
   }
 
-  static showErrorNotEnoughtETH() {
-    console.warn('********************Error********************')
-    console.warn('Not enought ether to execute transaction')
-    console.warn('*********************************************')
+  static showErrorNotEnoughtETH(tracklog) {
+    tracklog.push(`********************Error********************`)
+    tracklog.push(`Not enought ether to execute transaction`)
+    tracklog.push(`*********************************************`)
   }
 
-  static showSwapOutput(toEstimated, gasEstimate, minimumAmountOut, hash) {
-    console.log('====================Swap=====================')
-    console.log('To (estimated)', toEstimated)
-    console.log('Gas (estimated)', gasEstimate)
-    console.log('Minimum received', minimumAmountOut)
-    console.log()
-    console.log('Detail transaction hash', hash)
-    console.log('=============================================')
+  static showSwapOutput(tracklog, toEstimated, gasEstimate, minimumAmountOut, hash) {
+    tracklog.push(`====================Swap=====================`)
+    tracklog.push(`To (estimated) ${toEstimated}`)
+    tracklog.push(`Gas (estimated) ${gasEstimate}`)
+    tracklog.push(`Minimum received ${minimumAmountOut}`)
+    tracklog.push(``)
+    tracklog.push(`Detail transaction hash ${hash}`)
+    tracklog.push(`=============================================`)
   }
 
-  async swap() {
+  async swap(tracklog = []) {
     const trade = await useTradeExactIn(
       AutoSwap.getTokenAmount(this.fromToken, this.tokenAmountPerSwapTurn),
       this.toToken,
     )
-    if (!trade) return
+    if (!trade) return false
 
     const swapInfo = AutoSwap.getSwapInfo(trade, Configs.slippagePercent)
-    AutoSwap.showSwapInfo(swapInfo)
+    AutoSwap.showSwapInfo(tracklog, swapInfo)
 
+    // console.log(swapInfo._price.raw.toSignificant(6))
     // console.log(swapInfo._price.raw.lessThan(this.price))
     if (swapInfo._price.raw.lessThan(this.price)) {
       const balanceEther = formatEther(await getBalance())
@@ -151,6 +152,7 @@ export class AutoSwap {
           : balanceEther
 
       AutoSwap.showBalances(
+        tracklog,
         balanceEther,
         balanceTokenIn,
         balanceTokenOut,
@@ -163,7 +165,7 @@ export class AutoSwap {
       await approveToken(trade.inputAmount, UNISWAPV2_ROUTER_ADDRESS)
 
       if (+trade.inputAmount.toExact() > +balanceTokenIn) {
-        AutoSwap.showErrorNotEnoughtInput()
+        AutoSwap.showErrorNotEnoughtInput(tracklog)
         return true
       }
 
@@ -178,7 +180,7 @@ export class AutoSwap {
       } = await estimateGasTrade(trade, swapInfo.slippage)
 
       if (+balanceEther < +formatEther(gasEstimate)) {
-        AutoSwap.showErrorNotEnoughtETH()
+        AutoSwap.showErrorNotEnoughtETH(tracklog)
         return true
       }
 
@@ -190,7 +192,13 @@ export class AutoSwap {
       })
 
       // write log
-      AutoSwap.showSwapOutput(swapInfo.toEstimated, gasEstimate.toString(), swapInfo.minimumAmountOut, response.hash)
+      AutoSwap.showSwapOutput(
+        tracklog,
+        swapInfo.toEstimated,
+        gasEstimate.toString(),
+        swapInfo.minimumAmountOut,
+        response.hash,
+      )
 
       // wait transaction finish
       response && response.wait && (await response.wait())
@@ -199,14 +207,15 @@ export class AutoSwap {
   }
 
   async log() {
+    const tracklog = []
     const delta = Date.now() - this.prevTick
     this.prevTick = Date.now()
-    // !Configs.isDisableLog && console.log('Call after:', delta, 'ms')
+    tracklog.push(`# Call after ${delta} ms`)
     const beginAt = Date.now()
-    const result = await this.swap()
+    const result = await this.swap(tracklog)
     const endAt = Date.now()
-    // !Configs.isDisableLog && console.log('Time run:', endAt - beginAt, 'ms')
-    result && !Configs.isDisableLog && console.log()
+    tracklog.push(`# Time run ${endAt - beginAt} ms\n`)
+    result && !Configs.isDisableLog && console.log(tracklog.join(`\n`))
   }
 
   start(scheduleRule: ScheduleRule) {
